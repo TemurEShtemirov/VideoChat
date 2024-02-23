@@ -122,32 +122,49 @@ export default function App() {
           </div>
         </div>
         <div className="myId">
-          <TextField 
-          id="filled-basic"
-          label="Name"
-          variant='filled'
-          value={name}
-          onChange={(e)=> setName(e.target.value)}
-          style={{marginBottom:"20px"}}
+          <TextField
+            id="filled-basic"
+            label="Name"
+            variant='filled'
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            style={{ marginBottom: "20px" }}
           />
 
-          <CopyToClipboard text={me} style={{marginBottom:"2rem"}} >
-            <Button variant='contained' color='primary' startIcon={<AssigmentIcon fontSize='large'/>}>
+          <CopyToClipboard text={me} style={{ marginBottom: "2rem" }} >
+            <Button variant='contained' color='primary' startIcon={<AssigmentIcon fontSize='large' />}>
               Copy ID
             </Button>
           </CopyToClipboard>
-<TextField 
-id='filled-basic'
-label="ID to Call"
-variant='filled'
-value={idToCall}
-onChange={(e)=> setIdToCall(e.target.value)}
-/>
+          <TextField
+            id='filled-basic'
+            label="ID to Call"
+            variant='filled'
+            value={idToCall}
+            onChange={(e) => setIdToCall(e.target.value)}
+          />
 
-<div className="call-button">
-  
-</div>
+          <div className="call-button">
+            {callAccepted && !callEnded ? (
+              <Button variant='contained' color='secondary' onClick={leaveCall}>
+                End Call
+              </Button>
+            ) : (
+              <IconButton color='primary' aria-label='call' onClick={() => callUser(idToCall)}>
+                <PhoneIcon fontSize='large' />
+              </IconButton>
+            )}
+            {idToCall}
+          </div>
         </div>
+        {receivingCall && !callAccepted ? (
+          <div className="caller">
+            <h1>{name} Is Callling...</h1>
+            <Button variant='contained' color='primary' onClick={answerCall}>
+              Answer
+            </Button>
+          </div>
+        ) : null}
       </div>
     </>
   )
