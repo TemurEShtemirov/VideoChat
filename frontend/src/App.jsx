@@ -1,112 +1,111 @@
-import React, { useEffect, useRef, useState } from 'react'
-import Button from '@material-ui/core/Button'
-import IconButton from '@material-ui/core/IconButton'
-import TextField from '@material-ui/core/TextField'
-import AssigmentIcon from '@material-ui/icons/Assessment'
-import PhoneIcon from '@material-ui/icons/Phone'
-import CopyToClipboard from 'react-copy-to-clipboard'
-import Peer from 'simple-peer'
-import io from 'socket.io-client'
-import './App.css'
+import React, { useEffect, useRef, useState } from 'react';
+import Button from '@material-ui/core/Button';
+import IconButton from '@material-ui/core/IconButton';
+import TextField from '@material-ui/core/TextField';
+import AssigmentIcon from '@material-ui/icons/Assessment';
+import PhoneIcon from '@material-ui/icons/Phone';
+import CopyToClipboard from 'react-copy-to-clipboard';
+import Peer from 'simple-peer';
+import io from 'socket.io-client';
+import './App.css';
 
-const socket = io.connect("http://localhost:4863")
+const socket = io.connect("http://localhost:4863");
 
 export default function App() {
+  const [me, setMe] = useState("");
+  const [stream, setStream] = useState(null);
+  const [receivingCall, setReceivingCall] = useState(false);
+  const [caller, setCaller] = useState("");
+  const [callerSignal, setCallerSignal] = useState(null);
+  const [callAccepted, setCallAccepted] = useState(false);
+  const [idToCall, setIdToCall] = useState("");
+  const [callEnded, setCallEnded] = useState(false);
+  const [name, setName] = useState("");
 
-
-  const [me, setMe] = useState("")
-  const [stream, setStream] = useState()
-  const [receivingCall, setReceivingCall] = useState(false)
-  const [caller, setCaller] = useState("")
-  const [callerSignal, setCallerSignal] = useState()
-  const [callAccepted, setCallAccepted] = useState(false)
-  const [idToCall, setIdToCall] = useState("")
-  const [callEnded, setCallEnded] = useState(false)
-  const [name, setName] = useState("")
-
-  const myVideo = useRef()
-  const userVideo = useRef()
-  const connectionRef = useRef()
+  const myVideo = useRef(null);
+  const userVideo = useRef(null);
+  const connectionRef = useRef(null);
 
   useEffect(() => {
-    navigator.mediaDevices.getUserMedia({ video: true, audio: true }).then((stream) => {
-      setStream(stream)
-      myVideo.current.srcObject = stream
-    })
-
+    navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+      .then((stream) => {
+        setStream(stream);
+        if (myVideo.current) {
+          myVideo.current.srcObject = stream;
+        }
+      })
+      .catch((err) => console.error('Error accessing media devices: ', err));
 
     socket.on("me", (id) => {
-      setMe(id)
-    })
-
+      setMe(id);
+    });
 
     socket.on("callUser", (data) => {
-      setReceivingCall(true)
-      setCaller(data.from)
-      setName(data.name)
-      setCallerSignal(data.signal)
-    })
-  }, [])
-
+      setReceivingCall(true);
+      setCaller(data.from);
+      setName(data.name);
+      setCallerSignal(data.signal);
+    });
+  }, []);
 
   const callUser = (id) => {
     const peer = new Peer({
       initiator: true,
       trickle: false,
-      stream: stream
-    })
-
+      stream: stream,
+    });
 
     peer.on("signal", (data) => {
       socket.emit("callUser", {
         userToCall: id,
         signalData: data,
         from: me,
-        name: name
-      })
+        name: name,
+      });
 
       peer.on("stream", (stream) => {
-        userVideo.current.srcObject = stream
-      })
+        if (userVideo.current) {
+          userVideo.current.srcObject = stream;
+        }
+      });
 
       socket.on("callAccepted", (signal) => {
-        setCallAccepted(true)
-        peer.signal(signal)
-      })
+        setCallAccepted(true);
+        peer.signal(signal);
+      });
+    });
 
-
-    })
-
-    connectionRef.current = peer
-
-  }
+    connectionRef.current = peer;
+  };
 
   const answerCall = () => {
-    setCallAccepted(true)
+    setCallAccepted(true);
     const peer = new Peer({
       initiator: false,
       trickle: false,
-      stream: stream
-    })
-
+      stream: stream,
+    });
 
     peer.on("signal", (data) => {
-      socket.emit("answerCall", { signal: data, to: caller })
-    })
+      socket.emit("answerCall", { signal: data, to: caller });
+    });
 
     peer.on("stream", (stream) => {
-      userVideo.current.srcObject = stream
-    })
+      if (userVideo.current) {
+        userVideo.current.srcObject = stream;
+      }
+    });
 
-    peer.signal(callerSignal)
-    connectionRef.current = peer
-
-  }
+    peer.signal(callerSignal);
+    connectionRef.current = peer;
+  };
 
   const leaveCall = () => {
-    setCallEnded(true)
-    connectionRef.current.destroy()
-  }
+    setCallEnded(true);
+    if (connectionRef.current) {
+      connectionRef.current.destroy();
+    }
+  };
 
   return (
     <>
@@ -117,8 +116,7 @@ export default function App() {
             {stream && <video playsInline muted ref={myVideo} autoPlay style={{ width: "300px" }} />}
           </div>
           <div className="video">
-            {callAccepted && !callEnded ?
-              <video playsInline ref={userVideo} autoPlay style={{ width: "300px" }} /> : null}
+            {callAccepted && !callEnded ? <video playsInline ref={userVideo} autoPlay style={{ width: "300px" }} /> : null}
           </div>
         </div>
         <div className="myId">
@@ -159,7 +157,7 @@ export default function App() {
         </div>
         {receivingCall && !callAccepted ? (
           <div className="caller">
-            <h1>{name} Is Callling...</h1>
+            <h1>{name} Is Calling...</h1>
             <Button variant='contained' color='primary' onClick={answerCall}>
               Answer
             </Button>
@@ -167,5 +165,5 @@ export default function App() {
         ) : null}
       </div>
     </>
-  )
+  );
 }
